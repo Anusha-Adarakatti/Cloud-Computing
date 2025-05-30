@@ -1,0 +1,71 @@
+---
+- name: Deploy Full-stack Registration App
+  hosts: webserver
+  become: yes
+
+  vars:
+    mongo_port: 27017
+    app_port: 3000
+
+  tasks:
+    - name: Update APT package cache
+      apt:
+        update_cache: yes
+
+    - name: Install necessary packages
+      apt:
+        name:
+          - nginx
+          - nodejs
+          - npm
+          - mongodb
+        state: present
+
+    - name: Enable and start MongoDB
+      systemd:
+        name: mongodb
+        enabled: yes
+        state: started
+
+    - name: Copy frontend files to nginx directory
+      copy:
+        src: "{{ item }}"
+        dest: "/var/www/html/"
+      with_fileglob:
+        - "files/*.html"
+        - "files/*.css"
+
+    - name: Remove default nginx index
+      file:
+        path: "/var/www/html/index.nginx-debian.html"
+        state: absent
+
+    - name: Copy backend file
+      copy:
+        src: files/app.js
+        dest: /opt/app.js
+        mode: '0755'
+
+    - name: Install express (Node.js package)
+      shell: npm install express body-parser mongodb
+      args:
+        chdir: /opt/
+
+    - name: Run the Node.js backend
+      shell: "nohup node /opt/app.js &"
+      async: 10
+      poll: 0
+
+    - name: Allow app and mongo port in firewall
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+      loop:
+        - "{{ app_port }}"
+        - "{{ mongo_port }}"
+
+    - name: Ensure nginx is running
+      service:
+        name: nginx
+        state: started
+        enabled: yes
