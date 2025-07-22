@@ -1,0 +1,95 @@
+# Admin Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin
+  template:
+    metadata:
+      labels:
+        app: admin
+    spec:
+      containers:
+      - name: admin
+        image: admin-service:local  # Changed to correct image
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5001
+        env:
+        - name: DB_HOST
+          value: "postgres-service"
+        - name: DB_NAME
+          value: "issues_db"
+        - name: DB_USER
+          value: "postgres"
+        - name: DB_PASS
+          value: "postgres"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+
+---
+# Admin Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-service
+spec:
+  type: NodePort
+  selector:
+    app: admin
+  ports:
+    - protocol: TCP
+      port: 5001
+      targetPort: 5001
+      nodePort: 30002
+
+---
+# Admin HPA
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: admin-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: admin-deployment
+  minReplicas: 1
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 15
+
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 50      
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0  # React immediately
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 0  # React immediately
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+

@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: issues_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build: ./user_service
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: postgres
+      DB_NAME: issues_db
+      DB_USER: postgres
+      DB_PASS: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  admin-service:
+    build: ./admin_service
+    ports:
+      - "5001:5001"
+    environment:
+      DB_HOST: postgres
+      DB_NAME: issues_db
+      DB_USER: postgres
+      DB_PASS: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+volumes:
+  postgres-data:
+
+networks:
+  app-network:
+    driver: bridge

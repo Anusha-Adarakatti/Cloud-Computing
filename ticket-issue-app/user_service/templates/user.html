@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Submit Issue</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        form { display: flex; flex-direction: column; gap: 10px; }
+        input, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+    <h1>Submit Your Issue</h1>
+    <form action="/submit" method="post">
+        <input type="text" name="title" placeholder="Issue Title" required>
+        <textarea name="description" placeholder="Detailed Description" rows="5" required></textarea>
+        <input type="email" name="email" placeholder="Your Email" required>
+        <button type="submit">Submit Issue</button>
+    </form>
+</body>
+</html>
